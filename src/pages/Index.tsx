@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Shot {
   x: number;
@@ -18,6 +20,13 @@ interface LeaderboardEntry {
   score: number;
   accuracy: number;
   date: string;
+  group?: string;
+}
+
+interface Participant {
+  firstName: string;
+  lastName: string;
+  group: string;
 }
 
 const Index = () => {
@@ -29,6 +38,8 @@ const Index = () => {
   const [gameDuration, setGameDuration] = useState(6);
   const [timeLeft, setTimeLeft] = useState(60);
   const [showResult, setShowResult] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(true);
+  const [participant, setParticipant] = useState<Participant>({ firstName: '', lastName: '', group: '' });
 
   const leaderboard: LeaderboardEntry[] = [
     { name: 'Александр К.', score: 950, accuracy: 95, date: '19.01.2026' },
@@ -51,6 +62,9 @@ const Index = () => {
   }, [gameActive, timeLeft]);
 
   const startGame = () => {
+    if (!participant.firstName || !participant.lastName || !participant.group) {
+      return;
+    }
     setScore(0);
     setShots([]);
     setTotalShots(0);
@@ -58,6 +72,17 @@ const Index = () => {
     setTimeLeft(gameDuration);
     setGameActive(true);
     setShowResult(false);
+    setShowRegistration(false);
+  };
+
+  const resetToRegistration = () => {
+    setShowRegistration(true);
+    setGameActive(false);
+    setShowResult(false);
+    setScore(0);
+    setShots([]);
+    setTotalShots(0);
+    setMisses(0);
   };
 
   const handleTargetClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -177,9 +202,63 @@ const Index = () => {
                   </div>
                 ))}
 
-                {!gameActive && !showResult && (
+                {!gameActive && !showResult && showRegistration && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm p-6">
+                    <div className="text-center max-w-md w-full">
+                      <h3 className="text-2xl font-bold mb-6">РЕГИСТРАЦИЯ УЧАСТНИКА</h3>
+                      <div className="space-y-4 mb-6">
+                        <div className="text-left">
+                          <Label htmlFor="firstName" className="text-foreground mb-2 block">Имя</Label>
+                          <Input 
+                            id="firstName"
+                            value={participant.firstName}
+                            onChange={(e) => setParticipant(prev => ({ ...prev, firstName: e.target.value }))}
+                            placeholder="Введите имя"
+                            className="text-lg"
+                          />
+                        </div>
+                        <div className="text-left">
+                          <Label htmlFor="lastName" className="text-foreground mb-2 block">Фамилия</Label>
+                          <Input 
+                            id="lastName"
+                            value={participant.lastName}
+                            onChange={(e) => setParticipant(prev => ({ ...prev, lastName: e.target.value }))}
+                            placeholder="Введите фамилию"
+                            className="text-lg"
+                          />
+                        </div>
+                        <div className="text-left">
+                          <Label htmlFor="group" className="text-foreground mb-2 block">Учебная группа</Label>
+                          <Input 
+                            id="group"
+                            value={participant.group}
+                            onChange={(e) => setParticipant(prev => ({ ...prev, group: e.target.value }))}
+                            placeholder="Например: 1-А"
+                            className="text-lg"
+                          />
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => setShowRegistration(false)} 
+                        size="lg" 
+                        className="text-xl px-8 py-6 w-full"
+                        disabled={!participant.firstName || !participant.lastName || !participant.group}
+                      >
+                        <Icon name="ChevronRight" className="mr-2" size={24} />
+                        ПРОДОЛЖИТЬ
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {!gameActive && !showResult && !showRegistration && (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm">
                     <div className="text-center">
+                      <div className="mb-6">
+                        <div className="text-xl text-muted-foreground mb-2">Участник:</div>
+                        <div className="text-2xl font-bold">{participant.firstName} {participant.lastName}</div>
+                        <div className="text-lg text-muted-foreground">Группа: {participant.group}</div>
+                      </div>
                       <h3 className="text-2xl font-bold mb-4">ВЫБЕРИ ВРЕМЯ ИГРЫ</h3>
                       <div className="flex gap-3 mb-6 justify-center">
                         <Button 
@@ -211,10 +290,16 @@ const Index = () => {
                           12 сек
                         </Button>
                       </div>
-                      <Button onClick={startGame} size="lg" className="text-xl px-8 py-6">
-                        <Icon name="Target" className="mr-2" size={24} />
-                        НАЧАТЬ ИГРУ
-                      </Button>
+                      <div className="flex gap-3 justify-center">
+                        <Button onClick={resetToRegistration} variant="outline" size="lg" className="text-lg px-6 py-4">
+                          <Icon name="UserX" className="mr-2" size={20} />
+                          Сменить участника
+                        </Button>
+                        <Button onClick={startGame} size="lg" className="text-xl px-8 py-6">
+                          <Icon name="Target" className="mr-2" size={24} />
+                          НАЧАТЬ ИГРУ
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -223,6 +308,10 @@ const Index = () => {
                   <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm">
                     <div className="text-center">
                       <h2 className="text-4xl font-bold mb-4">РЕЗУЛЬТАТ</h2>
+                      <div className="text-2xl text-muted-foreground mb-2">
+                        {participant.firstName} {participant.lastName}
+                      </div>
+                      <div className="text-lg text-muted-foreground mb-4">Группа: {participant.group}</div>
                       <div className="text-6xl font-bold text-primary mb-2">{score}</div>
                       <div className="text-2xl text-muted-foreground mb-2">
                         {totalShots} выстрелов • {hits} попаданий • {misses} промахов
@@ -230,10 +319,16 @@ const Index = () => {
                       <div className="text-3xl font-bold text-accent mb-6">
                         Точность: {accuracy}%
                       </div>
-                      <Button onClick={startGame} size="lg" className="text-xl px-8 py-6">
-                        <Icon name="RotateCcw" className="mr-2" size={24} />
-                        ИГРАТЬ СНОВА
-                      </Button>
+                      <div className="flex gap-3 justify-center">
+                        <Button onClick={resetToRegistration} variant="outline" size="lg" className="text-lg px-6 py-4">
+                          <Icon name="UserX" className="mr-2" size={20} />
+                          Сменить участника
+                        </Button>
+                        <Button onClick={startGame} size="lg" className="text-xl px-8 py-6">
+                          <Icon name="RotateCcw" className="mr-2" size={24} />
+                          ИГРАТЬ СНОВА
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
