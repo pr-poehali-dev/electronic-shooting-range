@@ -1,11 +1,281 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Icon from '@/components/ui/icon';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+
+interface Shot {
+  x: number;
+  y: number;
+  points: number;
+  timestamp: number;
+}
+
+interface LeaderboardEntry {
+  name: string;
+  score: number;
+  accuracy: number;
+  date: string;
+}
 
 const Index = () => {
+  const [score, setScore] = useState(0);
+  const [shots, setShots] = useState<Shot[]>([]);
+  const [totalShots, setTotalShots] = useState(0);
+  const [gameActive, setGameActive] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [showResult, setShowResult] = useState(false);
+
+  const leaderboard: LeaderboardEntry[] = [
+    { name: 'Александр К.', score: 950, accuracy: 95, date: '19.01.2026' },
+    { name: 'Мария П.', score: 920, accuracy: 92, date: '18.01.2026' },
+    { name: 'Дмитрий С.', score: 890, accuracy: 89, date: '18.01.2026' },
+    { name: 'Елена В.', score: 870, accuracy: 87, date: '17.01.2026' },
+    { name: 'Иван М.', score: 850, accuracy: 85, date: '17.01.2026' },
+  ];
+
+  useEffect(() => {
+    if (gameActive && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    } else if (timeLeft === 0 && gameActive) {
+      setGameActive(false);
+      setShowResult(true);
+    }
+  }, [gameActive, timeLeft]);
+
+  const startGame = () => {
+    setScore(0);
+    setShots([]);
+    setTotalShots(0);
+    setTimeLeft(60);
+    setGameActive(true);
+    setShowResult(false);
+  };
+
+  const handleTargetClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!gameActive) return;
+
+    const target = e.currentTarget;
+    const rect = target.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    const centerX = 50;
+    const centerY = 50;
+    const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+
+    let points = 0;
+    if (distance < 8) points = 100;
+    else if (distance < 16) points = 80;
+    else if (distance < 24) points = 60;
+    else if (distance < 32) points = 40;
+    else if (distance < 40) points = 20;
+    else points = 10;
+
+    setScore(prev => prev + points);
+    setTotalShots(prev => prev + 1);
+    setShots(prev => [...prev, { x, y, points, timestamp: Date.now() }]);
+
+    setTimeout(() => {
+      setShots(prev => prev.filter(shot => shot.timestamp !== Date.now()));
+    }, 1000);
+  };
+
+  const accuracy = totalShots > 0 ? Math.round((score / (totalShots * 100)) * 100) : 0;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4 color-black text-black">Добро пожаловать!</h1>
-        <p className="text-xl text-gray-600">тут будет отображаться ваш проект</p>
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-5xl md:text-7xl font-bold text-primary mb-2 tracking-tight">
+            ЭЛЕКТРОННЫЙ ТИР
+          </h1>
+          <p className="text-xl text-muted-foreground">Проверь свою меткость и точность!</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2">
+            <Card className="p-6 bg-card border-2 border-border">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex gap-4">
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-primary">{score}</div>
+                    <div className="text-sm text-muted-foreground">ОЧКИ</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-secondary">{totalShots}</div>
+                    <div className="text-sm text-muted-foreground">ВЫСТРЕЛЫ</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-accent">{accuracy}%</div>
+                    <div className="text-sm text-muted-foreground">ТОЧНОСТЬ</div>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-foreground">{timeLeft}s</div>
+                  <div className="text-sm text-muted-foreground">ВРЕМЯ</div>
+                </div>
+              </div>
+
+              <Progress value={(timeLeft / 60) * 100} className="mb-6 h-2" />
+
+              <div className="relative aspect-square bg-gradient-to-br from-muted/50 to-background rounded-lg border-4 border-border overflow-hidden cursor-crosshair" onClick={handleTargetClick}>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative w-[80%] h-[80%]">
+                    <div className="absolute inset-0 rounded-full bg-primary/10 border-4 border-primary/30 flex items-center justify-center">
+                      <div className="w-[80%] h-[80%] rounded-full bg-primary/10 border-4 border-primary/40 flex items-center justify-center">
+                        <div className="w-[60%] h-[60%] rounded-full bg-primary/20 border-4 border-primary/50 flex items-center justify-center">
+                          <div className="w-[40%] h-[40%] rounded-full bg-primary/30 border-4 border-primary/60 flex items-center justify-center">
+                            <div className="w-[50%] h-[50%] rounded-full bg-primary border-4 border-primary flex items-center justify-center">
+                              <Icon name="Crosshair" className="text-background" size={32} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {shots.map((shot, idx) => (
+                  <div
+                    key={idx}
+                    className="absolute animate-ping"
+                    style={{
+                      left: `${shot.x}%`,
+                      top: `${shot.y}%`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                  >
+                    <div className={`rounded-full ${shot.points >= 80 ? 'bg-primary' : shot.points >= 40 ? 'bg-secondary' : 'bg-accent'}`} style={{ width: '16px', height: '16px' }} />
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-2xl font-bold text-primary whitespace-nowrap">
+                      +{shot.points}
+                    </div>
+                  </div>
+                ))}
+
+                {!gameActive && !showResult && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+                    <Button onClick={startGame} size="lg" className="text-xl px-8 py-6">
+                      <Icon name="Target" className="mr-2" size={24} />
+                      НАЧАТЬ ИГРУ
+                    </Button>
+                  </div>
+                )}
+
+                {showResult && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+                    <div className="text-center">
+                      <h2 className="text-4xl font-bold mb-4">РЕЗУЛЬТАТ</h2>
+                      <div className="text-6xl font-bold text-primary mb-2">{score}</div>
+                      <div className="text-2xl text-muted-foreground mb-6">
+                        {totalShots} выстрелов • {accuracy}% точность
+                      </div>
+                      <Button onClick={startGame} size="lg" className="text-xl px-8 py-6">
+                        <Icon name="RotateCcw" className="mr-2" size={24} />
+                        ИГРАТЬ СНОВА
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {!gameActive && (
+                <div className="mt-4 text-center text-muted-foreground">
+                  <p className="text-sm">Кликай по мишени! Чем ближе к центру — тем больше очков!</p>
+                </div>
+              )}
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card className="p-6 bg-card border-2 border-border">
+              <div className="flex items-center gap-2 mb-4">
+                <Icon name="Trophy" className="text-primary" size={24} />
+                <h2 className="text-2xl font-bold">ТАБЛИЦА ЛИДЕРОВ</h2>
+              </div>
+              <div className="space-y-3">
+                {leaderboard.map((entry, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                    <Badge variant={idx === 0 ? 'default' : 'secondary'} className="w-8 h-8 flex items-center justify-center text-lg font-bold">
+                      {idx + 1}
+                    </Badge>
+                    <div className="flex-1">
+                      <div className="font-semibold">{entry.name}</div>
+                      <div className="text-xs text-muted-foreground">{entry.date}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-primary">{entry.score}</div>
+                      <div className="text-xs text-muted-foreground">{entry.accuracy}%</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-card border-2 border-border">
+              <div className="flex items-center gap-2 mb-4">
+                <Icon name="Award" className="text-secondary" size={24} />
+                <h2 className="text-2xl font-bold">ДОСТИЖЕНИЯ</h2>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                  <Icon name="Target" className="text-primary" size={32} />
+                  <div className="flex-1">
+                    <div className="font-semibold">Снайпер</div>
+                    <div className="text-xs text-muted-foreground">10 попаданий в центр</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 opacity-50">
+                  <Icon name="Zap" className="text-secondary" size={32} />
+                  <div className="flex-1">
+                    <div className="font-semibold">Скорострел</div>
+                    <div className="text-xs text-muted-foreground">50 выстрелов за минуту</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 opacity-50">
+                  <Icon name="Star" className="text-accent" size={32} />
+                  <div className="flex-1">
+                    <div className="font-semibold">Мастер</div>
+                    <div className="text-xs text-muted-foreground">Набрать 1000 очков</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        <Card className="p-6 bg-card border-2 border-border">
+          <div className="flex items-center gap-2 mb-4">
+            <Icon name="BarChart3" className="text-accent" size={24} />
+            <h2 className="text-2xl font-bold">СТАТИСТИКА СЕССИИ</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 rounded-lg bg-muted/30">
+              <Icon name="Crosshair" className="mx-auto mb-2 text-primary" size={32} />
+              <div className="text-3xl font-bold">{totalShots}</div>
+              <div className="text-sm text-muted-foreground">Всего выстрелов</div>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-muted/30">
+              <Icon name="TrendingUp" className="mx-auto mb-2 text-secondary" size={32} />
+              <div className="text-3xl font-bold">{score}</div>
+              <div className="text-sm text-muted-foreground">Набрано очков</div>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-muted/30">
+              <Icon name="Percent" className="mx-auto mb-2 text-accent" size={32} />
+              <div className="text-3xl font-bold">{accuracy}%</div>
+              <div className="text-sm text-muted-foreground">Точность</div>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-muted/30">
+              <Icon name="Gauge" className="mx-auto mb-2 text-primary" size={32} />
+              <div className="text-3xl font-bold">{totalShots > 0 ? Math.round(score / totalShots) : 0}</div>
+              <div className="text-sm text-muted-foreground">Ср. за выстрел</div>
+            </div>
+          </div>
+        </Card>
       </div>
     </div>
   );
