@@ -26,6 +26,7 @@ const Index = () => {
   const [totalShots, setTotalShots] = useState(0);
   const [misses, setMisses] = useState(0);
   const [gameActive, setGameActive] = useState(false);
+  const [gameDuration, setGameDuration] = useState(60);
   const [timeLeft, setTimeLeft] = useState(60);
   const [showResult, setShowResult] = useState(false);
 
@@ -54,7 +55,7 @@ const Index = () => {
     setShots([]);
     setTotalShots(0);
     setMisses(0);
-    setTimeLeft(60);
+    setTimeLeft(gameDuration);
     setGameActive(true);
     setShowResult(false);
   };
@@ -140,7 +141,7 @@ const Index = () => {
                 </div>
               </div>
 
-              <Progress value={(timeLeft / 60) * 100} className="mb-6 h-2" />
+              <Progress value={(timeLeft / gameDuration) * 100} className="mb-6 h-2" />
 
               <div className="relative aspect-square bg-gradient-to-br from-muted/50 to-background rounded-lg border-4 border-border overflow-hidden cursor-crosshair" onClick={handleTargetClick}>
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -178,10 +179,43 @@ const Index = () => {
 
                 {!gameActive && !showResult && (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm">
-                    <Button onClick={startGame} size="lg" className="text-xl px-8 py-6">
-                      <Icon name="Target" className="mr-2" size={24} />
-                      НАЧАТЬ ИГРУ
-                    </Button>
+                    <div className="text-center">
+                      <h3 className="text-2xl font-bold mb-4">ВЫБЕРИ ВРЕМЯ ИГРЫ</h3>
+                      <div className="flex gap-3 mb-6 justify-center">
+                        <Button 
+                          onClick={() => setGameDuration(30)} 
+                          variant={gameDuration === 30 ? 'default' : 'outline'}
+                          className="text-lg px-6 py-4"
+                        >
+                          30 сек
+                        </Button>
+                        <Button 
+                          onClick={() => setGameDuration(60)} 
+                          variant={gameDuration === 60 ? 'default' : 'outline'}
+                          className="text-lg px-6 py-4"
+                        >
+                          60 сек
+                        </Button>
+                        <Button 
+                          onClick={() => setGameDuration(90)} 
+                          variant={gameDuration === 90 ? 'default' : 'outline'}
+                          className="text-lg px-6 py-4"
+                        >
+                          90 сек
+                        </Button>
+                        <Button 
+                          onClick={() => setGameDuration(120)} 
+                          variant={gameDuration === 120 ? 'default' : 'outline'}
+                          className="text-lg px-6 py-4"
+                        >
+                          120 сек
+                        </Button>
+                      </div>
+                      <Button onClick={startGame} size="lg" className="text-xl px-8 py-6">
+                        <Icon name="Target" className="mr-2" size={24} />
+                        НАЧАТЬ ИГРУ
+                      </Button>
+                    </div>
                   </div>
                 )}
 
