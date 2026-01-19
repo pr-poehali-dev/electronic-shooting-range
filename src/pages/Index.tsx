@@ -10,6 +10,7 @@ interface Shot {
   y: number;
   points: number;
   timestamp: number;
+  isMiss: boolean;
 }
 
 interface LeaderboardEntry {
@@ -23,6 +24,7 @@ const Index = () => {
   const [score, setScore] = useState(0);
   const [shots, setShots] = useState<Shot[]>([]);
   const [totalShots, setTotalShots] = useState(0);
+  const [misses, setMisses] = useState(0);
   const [gameActive, setGameActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [showResult, setShowResult] = useState(false);
@@ -51,6 +53,7 @@ const Index = () => {
     setScore(0);
     setShots([]);
     setTotalShots(0);
+    setMisses(0);
     setTimeLeft(60);
     setGameActive(true);
     setShowResult(false);
@@ -69,23 +72,35 @@ const Index = () => {
     const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
 
     let points = 0;
+    let isMiss = false;
+    
     if (distance < 8) points = 100;
     else if (distance < 16) points = 80;
     else if (distance < 24) points = 60;
     else if (distance < 32) points = 40;
     else if (distance < 40) points = 20;
-    else points = 10;
+    else {
+      points = 0;
+      isMiss = true;
+      setMisses(prev => prev + 1);
+    }
 
-    setScore(prev => prev + points);
+    if (!isMiss) {
+      setScore(prev => prev + points);
+    }
+    
     setTotalShots(prev => prev + 1);
-    setShots(prev => [...prev, { x, y, points, timestamp: Date.now() }]);
+    
+    const timestamp = Date.now();
+    setShots(prev => [...prev, { x, y, points, timestamp, isMiss }]);
 
     setTimeout(() => {
-      setShots(prev => prev.filter(shot => shot.timestamp !== Date.now()));
+      setShots(prev => prev.filter(shot => shot.timestamp !== timestamp));
     }, 1000);
   };
 
-  const accuracy = totalShots > 0 ? Math.round((score / (totalShots * 100)) * 100) : 0;
+  const hits = totalShots - misses;
+  const accuracy = totalShots > 0 ? Math.round((hits / totalShots) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -113,6 +128,10 @@ const Index = () => {
                   <div className="text-center">
                     <div className="text-4xl font-bold text-accent">{accuracy}%</div>
                     <div className="text-sm text-muted-foreground">ТОЧНОСТЬ</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-destructive">{misses}</div>
+                    <div className="text-sm text-muted-foreground">ПРОМАХИ</div>
                   </div>
                 </div>
                 <div className="text-center">
@@ -150,9 +169,9 @@ const Index = () => {
                       transform: 'translate(-50%, -50%)'
                     }}
                   >
-                    <div className={`rounded-full ${shot.points >= 80 ? 'bg-primary' : shot.points >= 40 ? 'bg-secondary' : 'bg-accent'}`} style={{ width: '16px', height: '16px' }} />
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-2xl font-bold text-primary whitespace-nowrap">
-                      +{shot.points}
+                    <div className={`rounded-full ${shot.isMiss ? 'bg-destructive' : shot.points >= 80 ? 'bg-primary' : shot.points >= 40 ? 'bg-secondary' : 'bg-accent'}`} style={{ width: '16px', height: '16px' }} />
+                    <div className={`absolute -top-8 left-1/2 -translate-x-1/2 text-2xl font-bold whitespace-nowrap ${shot.isMiss ? 'text-destructive' : 'text-primary'}`}>
+                      {shot.isMiss ? 'МИМО!' : `+${shot.points}`}
                     </div>
                   </div>
                 ))}
@@ -171,8 +190,11 @@ const Index = () => {
                     <div className="text-center">
                       <h2 className="text-4xl font-bold mb-4">РЕЗУЛЬТАТ</h2>
                       <div className="text-6xl font-bold text-primary mb-2">{score}</div>
-                      <div className="text-2xl text-muted-foreground mb-6">
-                        {totalShots} выстрелов • {accuracy}% точность
+                      <div className="text-2xl text-muted-foreground mb-2">
+                        {totalShots} выстрелов • {hits} попаданий • {misses} промахов
+                      </div>
+                      <div className="text-3xl font-bold text-accent mb-6">
+                        Точность: {accuracy}%
                       </div>
                       <Button onClick={startGame} size="lg" className="text-xl px-8 py-6">
                         <Icon name="RotateCcw" className="mr-2" size={24} />
@@ -270,9 +292,9 @@ const Index = () => {
               <div className="text-sm text-muted-foreground">Точность</div>
             </div>
             <div className="text-center p-4 rounded-lg bg-muted/30">
-              <Icon name="Gauge" className="mx-auto mb-2 text-primary" size={32} />
-              <div className="text-3xl font-bold">{totalShots > 0 ? Math.round(score / totalShots) : 0}</div>
-              <div className="text-sm text-muted-foreground">Ср. за выстрел</div>
+              <Icon name="XCircle" className="mx-auto mb-2 text-destructive" size={32} />
+              <div className="text-3xl font-bold">{misses}</div>
+              <div className="text-sm text-muted-foreground">Промахов</div>
             </div>
           </div>
         </Card>
