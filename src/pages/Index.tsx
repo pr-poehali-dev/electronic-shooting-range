@@ -16,11 +16,17 @@ interface Shot {
 }
 
 interface LeaderboardEntry {
-  name: string;
+  id?: number;
+  first_name: string;
+  last_name: string;
+  study_group: string;
   score: number;
   accuracy: number;
-  date: string;
-  group?: string;
+  total_shots: number;
+  hits: number;
+  misses: number;
+  game_duration: number;
+  created_at?: string;
 }
 
 interface Participant {
@@ -28,6 +34,8 @@ interface Participant {
   lastName: string;
   group: string;
 }
+
+const API_URL = 'https://functions.poehali.dev/bb073398-0eed-4423-8001-949ec80c2137';
 
 const Index = () => {
   const [score, setScore] = useState(0);
@@ -40,14 +48,12 @@ const Index = () => {
   const [showResult, setShowResult] = useState(false);
   const [showRegistration, setShowRegistration] = useState(true);
   const [participant, setParticipant] = useState<Participant>({ firstName: '', lastName: '', group: '' });
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  const leaderboard: LeaderboardEntry[] = [
-    { name: 'Александр К.', score: 950, accuracy: 95, date: '19.01.2026' },
-    { name: 'Мария П.', score: 920, accuracy: 92, date: '18.01.2026' },
-    { name: 'Дмитрий С.', score: 890, accuracy: 89, date: '18.01.2026' },
-    { name: 'Елена В.', score: 870, accuracy: 87, date: '17.01.2026' },
-    { name: 'Иван М.', score: 850, accuracy: 85, date: '17.01.2026' },
-  ];
+  useEffect(() => {
+    loadLeaderboard();
+  }, []);
 
   useEffect(() => {
     if (gameActive && timeLeft > 0) {
@@ -58,8 +64,48 @@ const Index = () => {
     } else if (timeLeft === 0 && gameActive) {
       setGameActive(false);
       setShowResult(true);
+      saveResult();
     }
   }, [gameActive, timeLeft]);
+
+  const loadLeaderboard = async () => {
+    try {
+      const response = await fetch(`${API_URL}?limit=10`);
+      const data = await response.json();
+      setLeaderboard(data);
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+    }
+  };
+
+  const saveResult = async () => {
+    const hits = totalShots - misses;
+    const accuracy = totalShots > 0 ? Math.round((hits / totalShots) * 100) : 0;
+    
+    setSaving(true);
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: participant.firstName,
+          lastName: participant.lastName,
+          group: participant.group,
+          score,
+          totalShots,
+          hits,
+          misses,
+          accuracy,
+          gameDuration
+        })
+      });
+      await loadLeaderboard();
+    } catch (error) {
+      console.error('Failed to save result:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const startGame = () => {
     if (!participant.firstName || !participant.lastName || !participant.group) {
@@ -316,9 +362,12 @@ const Index = () => {
                       <div className="text-2xl text-muted-foreground mb-2">
                         {totalShots} выстрелов • {hits} попаданий • {misses} промахов
                       </div>
-                      <div className="text-3xl font-bold text-accent mb-6">
+                      <div className="text-3xl font-bold text-accent mb-2">
                         Точность: {accuracy}%
                       </div>
+                      {saving && (
+                        <div className="text-sm text-muted-foreground mb-4">Сохранение результата...</div>
+                      )}
                       <div className="flex gap-3 justify-center">
                         <Button onClick={resetToRegistration} variant="outline" size="lg" className="text-lg px-6 py-4">
                           <Icon name="UserX" className="mr-2" size={20} />
@@ -349,21 +398,25 @@ const Index = () => {
                 <h2 className="text-2xl font-bold">ТАБЛИЦА ЛИДЕРОВ</h2>
               </div>
               <div className="space-y-3">
-                {leaderboard.map((entry, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                    <Badge variant={idx === 0 ? 'default' : 'secondary'} className="w-8 h-8 flex items-center justify-center text-lg font-bold">
-                      {idx + 1}
-                    </Badge>
-                    <div className="flex-1">
-                      <div className="font-semibold">{entry.name}</div>
-                      <div className="text-xs text-muted-foreground">{entry.date}</div>
+                {leaderboard.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">Нет результатов</div>
+                ) : (
+                  leaderboard.map((entry, idx) => (
+                    <div key={entry.id || idx} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                      <Badge variant={idx === 0 ? 'default' : 'secondary'} className="w-8 h-8 flex items-center justify-center text-lg font-bold">
+                        {idx + 1}
+                      </Badge>
+                      <div className="flex-1">
+                        <div className="font-semibold">{entry.first_name} {entry.last_name}</div>
+                        <div className="text-xs text-muted-foreground">{entry.study_group}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xl font-bold text-primary">{entry.score}</div>
+                        <div className="text-xs text-muted-foreground">{entry.accuracy}%</div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xl font-bold text-primary">{entry.score}</div>
-                      <div className="text-xs text-muted-foreground">{entry.accuracy}%</div>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </Card>
 

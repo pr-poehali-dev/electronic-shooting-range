@@ -1,0 +1,30 @@
+{
+  "tests": [
+    {
+      "name": "Save shooting result",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "firstName": "Иван",
+        "lastName": "Петров",
+        "group": "1-А",
+        "score": 450,
+        "totalShots": 15,
+        "hits": 12,
+        "misses": 3,
+        "accuracy": 80,
+        "gameDuration": 6
+      },
+      "expectedStatus": 201,
+
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get top results",
+      "method": "GET",
+      "path": "/?limit=5",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
