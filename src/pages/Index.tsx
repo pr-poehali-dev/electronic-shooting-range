@@ -110,7 +110,7 @@ const Index = () => {
           <h1 className="text-5xl md:text-7xl font-bold text-primary mb-2 tracking-tight">
             ЭЛЕКТРОННЫЙ ТИР
           </h1>
-          <p className="text-xl text-muted-foreground">Проверь свою меткость и точность!</p>
+          <p className="text-xl text-muted-foreground">Волгоградская академия МВД России</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
